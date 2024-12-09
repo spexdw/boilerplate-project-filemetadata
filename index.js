@@ -1,47 +1,39 @@
-const express = require('express');
-const multer = require('multer');
-const path = require('path');
+'use strict';
 
-const app = express();
+require('dotenv').config();
 
-// Configure multer storage to preserve original file names
-const storage = multer.diskStorage({
-  destination: (req, file, cb) => {
-    cb(null, 'uploads/')
-  },
-  filename: (req, file, cb) => {
-    cb(null, file.originalname)
-  }
+var express = require('express');
+var cors = require('cors');
+
+// require and use "multer"...
+var multer = require('multer');
+var upload = multer({ dest: 'uploads/' });
+
+var app = express();
+
+app.use(cors());
+app.use('/public', express.static(process.cwd() + '/public'));
+
+app.get('/', function (req, res) {
+  res.sendFile(process.cwd() + '/views/index.html');
 });
 
-const upload = multer({ 
-  storage: storage,
-  limits: { fileSize: 5 * 1024 * 1024 } // 5MB limit
-});
-
-// Serve static files
-app.use('/public', express.static(path.join(__dirname, 'public')));
-
-// Serve index.html
-app.get('/', (req, res) => {
-  res.sendFile(path.join(__dirname, 'views', 'index.html'));
-});
-
-// File upload route
 app.post('/api/fileanalyse', upload.single('upfile'), (req, res) => {
-  if (!req.file) {
-    return res.status(400).json({ error: 'No file uploaded' });
+  try {
+    res.json({
+      "name": req.file.originalname,
+      "type": req.file.mimetype,
+      "size": req.file.size
+    });
+  } catch (err) {
+    res.send(400);
   }
-
-  res.json({
-    name: req.file.originalname,
-    type: req.file.mimetype,
-    size: req.file.size
-  });
 });
 
-// Start the server
-const PORT = process.env.PORT || 3000;
-app.listen(PORT, () => {
-  console.log(`Server running on port ${PORT}`);
+app.get('/hello', function (req, res) {
+  res.json({ greetings: "Hello, API" });
+});
+
+app.listen(process.env.PORT || 3000, function () {
+  console.log('Node.js listening ...');
 });
